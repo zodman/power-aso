@@ -142,11 +142,13 @@ function parseStringArray(array) {
 
 function handleKeywordResult(result) {
   spinner.stop();
-  var table = new Table({ head: ['Traffic', 'Difficulty', 'Competitors'] });
+  var table = new Table({ head: ['Traffic', 'Difficulty', 'Competitors','Install'] });
+    console.log(result);
   table.push([
     result.traffic.score, 
     result.difficulty.score, 
-    result.difficulty.competitors.score
+    result.difficulty.competitors.score,
+    result.difficulty.installs.avg
   ]);
   console.log(table.toString());
   process.exit(0)
