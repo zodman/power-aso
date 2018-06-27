@@ -12,6 +12,15 @@ app.i = aso('itunes');
 const ora = require('ora');
 const spinner = ora('Searching')
 
+function GetAsoClient(store, lang, country){
+    if(store == 'g' ) {
+        return aso('gplay', {country: country, lang: lang});
+    } else {
+    
+        return aso('itunes', {country: country, lang: lang});
+    }
+}
+
 program
   .usage('<cmd> [options] \n')
 
@@ -19,18 +28,21 @@ program
   .command('scores')
   .description('The scores function gathers several statistics about a keyword and builds difficulty and traffic scores that can be used to evaluate the convenience of targeting that keyword.')
   .option('-s, --store <store>', 'i (iTunes connect) or g (Google Play).')
+  .option('-l, --lang <lang>', 'es or en', 'es')
+  .option('-c, --country <country>', 'es or us', 'es')
   .option('-k, --keyword <keyword>', 'Keyword you want to score.')
   .action(args => {
     spinner.start();
-    var fn = function (store, keyword) {
-      return app[store].scores(keyword);
+    var fn = function (store, keyword, lang, country) {
+      client = GetAsoClient(store, lang, country)
+      return client.scores(keyword);
     };
     var memoized = memoize(fn, {
       'promise': true,
       'maxAge': 86400000,
       'preFetch': true
     });
-    memoized(args.store, args.keyword)
+    memoized(args.store, args.keyword, args.lang, args.country)
       .then(handleKeywordResult)
       .catch(handle_error);
   })
@@ -39,6 +51,7 @@ program
   .command('suggest')
   .description('The suggest function returns a list of suggestions consisting of the most commonly used keywords among a given set of apps. There are several strategies to select that set of apps.')
   .option('-s, --store <store>', 'i (iTunes connect) or g (Google Play).')
+  .option('-l, --lang <lang>', 'es or us','us')
   .option('--strategy <STRATEGY>', 'the strategy used to get suggestions (E.g. CATEGORY, SIMILAR, COMPETITION, ARBITRARY, KEYWORDS or SEARCH). Defaults to CATEGORY.', parseStrategy)
   .option('-n, --num <int>', 'the amount of suggestions to get in the results. Defaults to 30.', parseInt)
   .option('-a, --app-id <app-id>', 'store app ID (for iTunes both numerical and bundle IDs are supported). Required for the CATEGORY, SIMILAR and COMPETITION strategies.')
@@ -70,18 +83,19 @@ program
   .command('visibility')
   .description('The visibility function gives an estimation of the app\'s discoverability within the store. The scores are built aggregating how well the app ranks for its target keywords, the traffic score for those keywords and how the app ranks in the top global and category rankings.')
   .option('-s, --store <store>', 'i (iTunes connect) or g (Google Play).')
+  .option('-l, --lang <lang>', 'es or us','us')
   .option('-a, --app-id <app-id>', 'App Id/Bundle identifier')
   .action(args => {
     spinner.start();
-    var fn = function (store, appId) {
-      return app[store].visibility(appId);
+    var fn = function (store, appId, lang) {
+      return app[store+'_'+lang].visibility(appId);
     };
     var memoized = memoize(fn, {
       'promise': true,
       'maxAge': 86400000,
       'preFetch': true
     });
-    memoized(args.store, args.appId)
+    memoized(args.store, args.appId, args.lang)
       .then(handleVisibilityResult)
       .catch(handle_error);
   })
@@ -90,17 +104,18 @@ program
   .command('app')
   .description('The app function returns an array of keywords extracted from title and description of the app. The only argument is the Google Play ID of the application (the ?id= parameter on the url).')
   .option('-s, --store <store>', 'i (iTunes connect) or g (Google Play).')
+  .option('-l, --lang <lang>', 'es or us','us')
   .option('-a, --app-id <app-id>', 'App Id.')
   .action(args => {
-    var fn = function (store, appId) {
-      return app[store].app(appId);
+    var fn = function (store, appId, lang) {
+      return app[store+'_'+lang].app(appId);
     };
     var memoized = memoize(fn, {
       'promise': true,
       'maxAge': 86400000,
       'preFetch': true
     });
-    memoized(args.store, args.appId)
+    memoized(args.store, args.appId, args.lang)
       .then(printListResult)
       .catch(handle_error);
   })
